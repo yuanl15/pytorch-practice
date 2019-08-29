@@ -1,6 +1,9 @@
 import numpy as np
 import torch
 from torch import nn
+from torch import optim
+from torch.autograd import Variable
+import matplotlib.pyplot as plt
 
 x_train = np.array([[3.3], [4.4], [5.5], [6.71], [6.93], [4.168],
                     [9.779], [6.182], [7.59], [2.167], [7.042],
@@ -15,16 +18,50 @@ x_train = torch.from_numpy(x_train)
 
 y_train = torch.from_numpy(y_train)
 
-class LinearRegression(nn.Model):
+
+class LinearRegression(nn.Module):
     def __init__(self):
-        super(LinearRegression, self).__init__()
+        super().__init__()
         self.linear = nn.Linear(1, 1) # input and output is 1 dimension
 
     def forward(self, x):
         out = self.linear(x)
         return out
 
+
 if torch.cuda.is_available():
     model = LinearRegression().cuda()
 else:
     model = LinearRegression()
+
+criterion = nn.MSELoss()
+optimizer = optim.SGD(model.parameters(), lr=1e-3)
+
+num_epochs = 1000
+for epoch in range(num_epochs):
+    if torch.cuda.is_available():
+        inputs = Variable(x_train).cuda()
+        target = Variable(y_train).cuda()
+    else:
+        inputs = Variable(x_train)
+        target = Variable(y_train)
+
+    # forward
+    out = model(inputs)
+    loss = criterion(out, target)
+
+    # backward
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+    if (epoch+1) % 20 == 0:
+        print('Epoch[{}/{}], loss:{:.6f}'.format(epoch+1, num_epochs, loss.data.item()))
+
+
+model.eval()
+predict = model(Variable(x_train))
+predict = predict.data.numpy()
+plt.plot(x_train.numpy(), y_train.numpy(), 'ro', label='Original data')
+plt.plot(x_train.numpy(), predict, label='Fitting Line')
+plt.show()
