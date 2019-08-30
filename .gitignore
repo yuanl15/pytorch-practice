@@ -105,3 +105,6 @@ venv.bak/
 
 # pycharm
 .idea/
+
+# dataset
+./NeuralNetwork/mnist_data/
